@@ -112,11 +112,10 @@ export default function App() {
   const [showStats, setShowStats] = useState(false);
   const [stats, setStats] = useState<Stats>({ sessions: 0, totalCycles: 0 });
 
-  // FIX: Explicitly pass an initial value to `useRef` to satisfy stricter linting rules.
   const phaseTimerRef = useRef<number | undefined>(undefined);
   const sessionTimerRef = useRef<number | undefined>(undefined);
   const countdownTimerRef = useRef<number | undefined>(undefined);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
   
   const isMutedRef = useRef(isMuted);
   useEffect(() => {
@@ -139,10 +138,37 @@ export default function App() {
   }, [phase, T, isRunning]);
 
   const playDingSound = useCallback(() => {
-    if (!isMutedRef.current && audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(error => console.error("Audio play failed:", error));
+    if (isMutedRef.current) return;
+
+    if (!audioContextRef.current) {
+      try {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      } catch (e) {
+        console.error("Web Audio API is not supported in this browser");
+        return;
+      }
     }
+    
+    const audioCtx = audioContextRef.current;
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.05);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+
+    oscillator.start(audioCtx.currentTime);
+    oscillator.stop(audioCtx.currentTime + 0.5);
   }, []);
 
   const advancePhase = useCallback(() => {
@@ -197,6 +223,10 @@ export default function App() {
 
 
   const startSession = (mins: number) => {
+    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume();
+    }
+
     const totalSeconds = mins * 60;
     setDuration(totalSeconds);
     setElapsedTime(0);
@@ -231,9 +261,6 @@ export default function App() {
     } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       setTheme('dark');
     }
-
-    audioRef.current = new Audio('/ding.ogg'); // Use a local file for deployment reliability
-    audioRef.current.volume = 0.3;
   }, []);
 
   useEffect(() => {
