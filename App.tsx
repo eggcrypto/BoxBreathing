@@ -232,7 +232,7 @@ export default function App() {
       setTheme('dark');
     }
 
-    audioRef.current = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg');
+    audioRef.current = new Audio('/ding.ogg'); // Use a local file for deployment reliability
     audioRef.current.volume = 0.3;
   }, []);
 
