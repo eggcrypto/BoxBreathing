@@ -1,0 +1,5 @@
+{
+  "name": "Zen Breathing: Box Method",
+  "description": "An interactive web page to help users practice the Box Breathing (4-4-4-4) technique through an animated, minimalist interface. Features include a session timer, cycle counter, ambient sounds, language selection (RU/EN), and a dark/light mode.",
+  "requestFramePermissions": []
+}
