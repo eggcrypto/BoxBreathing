@@ -1,14 +1,14 @@
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { GoogleGenAI, Modality } from '@google/genai';
 import { Phase, Stats } from './types';
-import { TRANSLATIONS, PHASE_DURATION_S, CYCLE_DURATION_S } from './constants';
-import { PlayIcon, PauseIcon, SoundOnIcon, SoundOffIcon, SunIcon, MoonIcon, LanguageIcon, ChartIcon, GuideIcon } from './components/Icons';
+import { TRANSLATIONS, PHASE_DURATION_S } from './constants';
+import { PlayIcon, PauseIcon, SoundOnIcon, SoundOffIcon, SunIcon, MoonIcon, LanguageIcon, ChartIcon } from './components/Icons';
 
 type Language = 'en' | 'ru';
 type Theme = 'light' | 'dark';
 
 // Helper component defined outside the main component to prevent re-renders
-const BreathingCircle = ({ phase, text, theme, countdown, isRunning, isGuided }: { phase: Phase; text: string; theme: Theme; countdown: number; isRunning: boolean; isGuided: boolean; }) => {
+const BreathingCircle = ({ phase, text, theme, countdown, isRunning }: { phase: Phase; text: string; theme: Theme; countdown: number; isRunning: boolean; }) => {
   const phaseStyles = useMemo(() => {
     const base = "absolute inset-0 rounded-full transition-all ease-in-out duration-4000 flex items-center justify-center p-4";
     
@@ -40,7 +40,7 @@ const BreathingCircle = ({ phase, text, theme, countdown, isRunning, isGuided }:
     return `${base} ${colors[phase]} ${scale[phase]}`;
   }, [phase, theme]);
 
-  const textSize = isRunning && isGuided ? 'text-lg sm:text-xl md:text-2xl font-normal' : 'text-2xl sm:text-3xl md:text-4xl font-medium';
+  const textSize = 'text-2xl sm:text-3xl md:text-4xl font-medium';
 
   return (
     <div className="relative w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80">
@@ -99,36 +99,6 @@ const StatsModal = ({ stats, onClose, T }: { stats: Stats; onClose: () => void; 
     </div>
 );
 
-const decode = (base64: string) => {
-    const binaryString = atob(base64);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes;
-};
-
-const decodeAudioData = async (
-    data: Uint8Array,
-    ctx: AudioContext,
-    sampleRate: number,
-    numChannels: number,
-): Promise<AudioBuffer> => {
-    const dataInt16 = new Int16Array(data.buffer);
-    const frameCount = dataInt16.length / numChannels;
-    const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-
-    for (let channel = 0; channel < numChannels; channel++) {
-        const channelData = buffer.getChannelData(channel);
-        for (let i = 0; i < frameCount; i++) {
-            channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-        }
-    }
-    return buffer;
-};
-
-
 export default function App() {
   const [phase, setPhase] = useState<Phase>(Phase.Idle);
   const [isRunning, setIsRunning] = useState(false);
@@ -141,41 +111,23 @@ export default function App() {
   const [theme, setTheme] = useState<Theme>('light');
   const [showStats, setShowStats] = useState(false);
   const [stats, setStats] = useState<Stats>({ sessions: 0, totalCycles: 0 });
-  const [isGuided, setIsGuided] = useState(false);
 
-  // FIX: Explicitly initialize useRef with `undefined` and update the type to `number | undefined`.
-  // This resolves the "Expected 1 arguments, but got 0" error, which likely stems from
-  // a type mismatch where the initial implicit `undefined` value does not match the `<number>` type.
-  const phaseTimerRef = useRef<number | undefined>();
-  const sessionTimerRef = useRef<number | undefined>();
-  const countdownTimerRef = useRef<number | undefined>();
+  // FIX: Explicitly pass an initial value to `useRef` to satisfy stricter linting rules.
+  const phaseTimerRef = useRef<number | undefined>(undefined);
+  const sessionTimerRef = useRef<number | undefined>(undefined);
+  const countdownTimerRef = useRef<number | undefined>(undefined);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const outputAudioContextRef = useRef<AudioContext | null>(null);
-  
-  const ai = useMemo(() => new GoogleGenAI({ apiKey: process.env.API_KEY as string }), []);
   
   const isMutedRef = useRef(isMuted);
   useEffect(() => {
     isMutedRef.current = isMuted;
   }, [isMuted]);
 
-  const isGuidedRef = useRef(isGuided);
-  useEffect(() => {
-    isGuidedRef.current = isGuided;
-  }, [isGuided]);
-
   const T = TRANSLATIONS[language];
 
   const phaseText = useMemo(() => {
     if (!isRunning || phase === Phase.Idle) return "";
     
-    const guideMap = {
-      [Phase.Inhale]: T.inhaleGuide,
-      [Phase.HoldIn]: T.holdInGuide,
-      [Phase.Exhale]: T.exhaleGuide,
-      [Phase.HoldOut]: T.holdOutGuide,
-    };
-
     const simpleMap = {
       [Phase.Inhale]: T.inhale,
       [Phase.HoldIn]: T.holdIn,
@@ -183,9 +135,8 @@ export default function App() {
       [Phase.HoldOut]: T.holdOut,
     };
 
-    const currentMap = isGuided ? guideMap : simpleMap;
-    return currentMap[phase as keyof typeof currentMap] || "";
-  }, [phase, T, isGuided, isRunning]);
+    return simpleMap[phase as keyof typeof simpleMap] || "";
+  }, [phase, T, isRunning]);
 
   const playDingSound = useCallback(() => {
     if (!isMutedRef.current && audioRef.current) {
@@ -193,39 +144,6 @@ export default function App() {
       audioRef.current.play().catch(error => console.error("Audio play failed:", error));
     }
   }, []);
-
-  const generateAndPlaySpeech = useCallback(async (text: string) => {
-    if (isMutedRef.current || !isGuidedRef.current) return;
-    if (!outputAudioContextRef.current) {
-        console.error("Audio context not initialized");
-        return;
-    }
-    
-    try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-tts",
-            contents: [{ parts: [{ text }] }],
-            config: {
-                responseModalities: [Modality.AUDIO],
-            },
-        });
-        const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-        if (base64Audio) {
-            const audioBuffer = await decodeAudioData(
-                decode(base64Audio),
-                outputAudioContextRef.current,
-                24000,
-                1,
-            );
-            const source = outputAudioContextRef.current.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(outputAudioContextRef.current.destination);
-            source.start();
-        }
-    } catch (error) {
-        console.error("Failed to generate or play speech:", error);
-    }
-  }, [ai]);
 
   const advancePhase = useCallback(() => {
     setPhase(currentPhase => {
@@ -245,7 +163,6 @@ export default function App() {
   const stopSession = useCallback(() => {
     setIsRunning(false);
     setPhase(Phase.Idle);
-    // FIX: Check against undefined to correctly handle timer ID 0.
     if (phaseTimerRef.current !== undefined) clearInterval(phaseTimerRef.current);
     if (sessionTimerRef.current !== undefined) clearInterval(sessionTimerRef.current);
     if (countdownTimerRef.current !== undefined) clearInterval(countdownTimerRef.current);
@@ -275,22 +192,8 @@ export default function App() {
 
   useEffect(() => {
     if (!isRunning || phase === Phase.Idle) return;
-
-    if (isGuided) {
-        let guideText = '';
-        switch(phase) {
-            case Phase.Inhale: guideText = T.inhaleGuide; break;
-            case Phase.HoldIn: guideText = T.holdInGuide; break;
-            case Phase.Exhale: guideText = T.exhaleGuide; break;
-            case Phase.HoldOut: guideText = T.holdOutGuide; break;
-        }
-        if (guideText) {
-            generateAndPlaySpeech(guideText);
-        }
-    } else {
-        playDingSound();
-    }
-  }, [phase, isRunning, isGuided, T, playDingSound, generateAndPlaySpeech]);
+    playDingSound();
+  }, [phase, isRunning, playDingSound]);
 
 
   const startSession = (mins: number) => {
@@ -331,13 +234,6 @@ export default function App() {
 
     audioRef.current = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg');
     audioRef.current.volume = 0.3;
-
-    try {
-        outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-    } catch (e) {
-        console.error("Web Audio API is not supported in this browser.");
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -352,7 +248,6 @@ export default function App() {
   const toggleTheme = () => setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
   const toggleLanguage = () => setLanguage(prev => (prev === 'en' ? 'ru' : 'en'));
   const toggleMute = () => setIsMuted(prev => !prev);
-  const toggleGuided = () => setIsGuided(prev => !prev);
   
   const formatTime = (seconds: number) => {
       const mins = Math.floor(seconds / 60);
@@ -371,9 +266,6 @@ export default function App() {
                 <button onClick={() => setShowStats(true)} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200 ease-in-out transform hover:scale-110" aria-label={T.stats}>
                     <ChartIcon className="w-6 h-6"/>
                 </button>
-                <button onClick={toggleGuided} className={`p-2 rounded-full transition-all duration-200 ease-in-out transform hover:scale-110 ${isGuided ? 'bg-cyan-200 dark:bg-cyan-700 text-cyan-800 dark:text-cyan-100' : 'hover:bg-slate-200 dark:hover:bg-slate-700'}`} aria-label={T.guide}>
-                    <GuideIcon className="w-6 h-6"/>
-                </button>
                 <button onClick={toggleLanguage} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200 ease-in-out transform hover:scale-110" aria-label="Toggle language">
                     <LanguageIcon className="w-6 h-6"/>
                 </button>
@@ -389,7 +281,7 @@ export default function App() {
         <main className="flex flex-col items-center justify-center flex-grow text-center">
             <div className="relative flex items-center justify-center w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 mb-8">
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-blue-600 dark:from-cyan-600 dark:to-blue-800 rounded-full opacity-20 dark:opacity-30" aria-hidden="true"></div>
-                <BreathingCircle phase={phase} text={phaseText} theme={theme} countdown={phaseCountdown} isRunning={isRunning} isGuided={isGuided} />
+                <BreathingCircle phase={phase} text={phaseText} theme={theme} countdown={phaseCountdown} isRunning={isRunning} />
             </div>
             
             {!isRunning && <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 max-w-md mb-4">{T.description}</p>}

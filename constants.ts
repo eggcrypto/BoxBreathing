@@ -18,11 +18,6 @@ export const TRANSLATIONS = {
     close: "Закрыть",
     title: "Квадратное дыхание",
     description: "Ритмичное дыхание по схеме 4-4-4-4 для повышения концентрации и устойчивости к стрессу.",
-    guide: "Гид для новичков",
-    inhaleGuide: "Вдохните через нос, считая до четырех.",
-    holdInGuide: "Задержите дыхание на четыре секунды.",
-    exhaleGuide: "Медленно выдохните через рот за четыре секунды.",
-    holdOutGuide: "Снова задержите дыхание на четыре секунды.",
   },
   en: {
     inhale: "Inhale",
@@ -40,10 +35,5 @@ export const TRANSLATIONS = {
     close: "Close",
     title: "Box Breathing",
     description: "A 4-4-4-4 rhythmic breathing technique to enhance focus and stress resistance.",
-    guide: "Beginner's Guide",
-    inhaleGuide: "Breathe in through your nose for four seconds.",
-    holdInGuide: "Hold your breath for a count of four.",
-    exhaleGuide: "Slowly exhale through your mouth for four seconds.",
-    holdOutGuide: "Hold your breath again for a count of four.",
   }
 };

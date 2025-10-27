@@ -47,10 +47,3 @@ export const ChartIcon = ({ className }: { className?: string }) => (
     <path d="M4 9h4v11H4zm0-5h4v4H4zm6 3h4v8h-4zm6 4h4v4h-4zm0-4h4v3h-4zm-6-9h4v2h-4z"/>
   </svg>
 );
-
-export const GuideIcon = ({ className }: { className?: string }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor">
-        <path d="M0 0h24v24H0V0z" fill="none"/>
-        <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/>
-    </svg>
-);
