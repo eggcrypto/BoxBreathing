@@ -293,14 +293,19 @@ export default function App() {
                 <button onClick={() => setShowStats(true)} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200 ease-in-out transform hover:scale-110" aria-label={T.stats}>
                     <ChartIcon className="w-6 h-6"/>
                 </button>
-                <button onClick={toggleLanguage} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200 ease-in-out transform hover:scale-110" aria-label="Toggle language">
+                <button onClick={toggleLanguage} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200 ease-in-out transform hover:scale-110" aria-label={T.toggleLanguage}>
                     <LanguageIcon className="w-6 h-6"/>
                 </button>
-                <button onClick={toggleMute} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200 ease-in-out transform hover:scale-110" aria-label="Toggle sound">
+                <button onClick={toggleMute} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200 ease-in-out transform hover:scale-110" aria-label={T.toggleSound}>
                     {isMuted ? <SoundOffIcon className="w-6 h-6"/> : <SoundOnIcon className="w-6 h-6"/>}
                 </button>
-                <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200 ease-in-out transform hover:scale-110" aria-label="Toggle theme">
-                    {theme === 'light' ? <MoonIcon className="w-6 h-6"/> : <SunIcon className="w-6 h-6"/>}
+                <button 
+                  onClick={toggleTheme} 
+                  className="relative p-2 w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors duration-200 ease-in-out transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 dark:focus-visible:ring-offset-slate-900" 
+                  aria-label={T.toggleTheme}
+                >
+                    <SunIcon className={`w-6 h-6 transition-all duration-500 ease-in-out transform ${theme === 'dark' ? 'opacity-100 rotate-0' : 'opacity-0 rotate-90'}`} />
+                    <MoonIcon className={`w-6 h-6 absolute transition-all duration-500 ease-in-out transform ${theme === 'light' ? 'opacity-100 rotate-0' : 'opacity-0 -rotate-90'}`} />
                 </button>
             </div>
         </header>
@@ -324,10 +329,14 @@ export default function App() {
         </main>
 
         <footer className="w-full flex justify-center items-center h-20">
-            {isRunning && (
+            {isRunning ? (
                 <button onClick={stopSession} className="p-4 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-all duration-200 ease-in-out transform hover:scale-105" aria-label={T.stop}>
                     <PauseIcon className="w-8 h-8"/>
                 </button>
+            ) : (
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                by Edward Gubaidullin
+              </p>
             )}
         </footer>
       </div>

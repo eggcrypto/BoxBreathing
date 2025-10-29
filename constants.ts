@@ -18,6 +18,9 @@ export const TRANSLATIONS = {
     close: "Закрыть",
     title: "Квадратное дыхание",
     description: "Ритмичное дыхание по схеме 4-4-4-4 для повышения концентрации и устойчивости к стрессу.",
+    toggleLanguage: "Переключить язык",
+    toggleSound: "Переключить звук",
+    toggleTheme: "Переключить тему",
   },
   en: {
     inhale: "Inhale",
@@ -35,5 +38,8 @@ export const TRANSLATIONS = {
     close: "Close",
     title: "Box Breathing",
     description: "A 4-4-4-4 rhythmic breathing technique to enhance focus and stress resistance.",
+    toggleLanguage: "Toggle language",
+    toggleSound: "Toggle sound",
+    toggleTheme: "Toggle theme",
   }
 };
